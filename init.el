@@ -61,6 +61,43 @@
   :ensure t
   :bind (("C-c g" . magit-status)))
 
+;; QML support for Quickshell editing
+(use-package qml-ts-mode
+  :ensure t
+  :mode "\\.qml\\'")
+
+;; Tree-sitter grammat for QML (requires tree-sitter and tree-sitter-langs)
+(use-package tree-sitter
+  :ensure t
+  :config
+  (global-tree-sitter-mode)
+  (add-to-list 'tree-sitter-major-mode-language-alist '(qml-ts-mode . qml)))
+
+(use-package tree-sitter-langs
+  :ensure t
+  :after tree-sitter
+  :config
+  ;; Point to the cloned QMLJS grammar
+  (add-to-list 'tree-sitter-langs-repos
+	       '("qmljs" . "~/.emacs.d/tree-sitter-qmljs"))
+  ;; Install grammars on startup (or run M-x tree-sitter-langs-install-grammars manually)
+  (add-hook 'after-init-hook #'tree-sitter-langs-install-grammars))
+
+;; LSP for QML (qmlls for validation/completion)
+(use-package lsp-mode
+  :ensure t
+  :commands lsp
+  :hook (qml-ts-mode . lsp-deferred)
+  :init
+  (setq lsp-log-io t) ; Enable for debugging
+  :config
+  ;; Use qmlls (Quickshell's LSP server)
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-tramp-connection "qmlls")
+		    :major-modes '(qml-ts-mode)
+		    :server-id 'qmlls))
+  (setq lsp-qmlls-server-path "qmlls")) ; Assumes qmlls is in PATH
+
 ;; Dired tweaks for better file navigation
 (use-package dired
   :ensure nil ;; Built-in package
